@@ -35,7 +35,7 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(ball_in_tube ball_in_tube.cpp )
+add_executable(ball_in_tube ball_in_tube.cpp vl53l1x.cpp)
 
 pico_set_program_name(ball_in_tube "ball_in_tube")
 pico_set_program_version(ball_in_tube "0.1")
@@ -65,4 +65,3 @@ target_link_libraries(ball_in_tube
         )
 
 pico_add_extra_outputs(ball_in_tube)
-
