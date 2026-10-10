@@ -11,12 +11,13 @@
 //   Geraet gefunden auf 0x29
 //   Boot-Status: 1, Sensor-ID: 0xEACC
 
-#include <stdio.h>
+#include <stdio.h>  
 #include <cstdint>
 #include <cstdio>
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 #include "hardware/pio.h"
+#include "hardware/clocks.h"
 #include "blink.pio.h"
 #include "vl53l1x.h"
 
@@ -25,18 +26,18 @@ constexpr uint SDA_PIN = 4;
 constexpr uint SCL_PIN = 5;
 
 constexpr uint16_t TIMING_BUDGET_MS = 20;   // Messdauer pro Wert
-constexpr uint16_t PERIOD_MS        = 20;   // Abstand der Messungen -> ~50 Hz
+constexpr uint16_t PERIOD_MS        = 20;   // Abstand der Messungen -> ~20 Hz
 
 // PIO Blinking example 
 void blink_pin_forever(PIO pio, uint sm, uint offset, uint pin, uint freq) {
     blink_program_init(pio, sm, offset, pin);
     pio_sm_set_enabled(pio, sm, true);
 
-    printf("Blinking pin %d at %d Hz\n", pin, freq);
+    //printf("Blinking pin %d at %d Hz\n", pin, freq);
 
     // PIO counter program takes 3 more cycles in total than we pass as
     // input (wait for n + 1; mov; jmp)
-    pio->txf[sm] = (125000000 / (2 * freq)) - 3;
+    pio->txf[sm] = (clock_get_hz(clk_sys) / (2 * freq)) - 3;
 }
 
 int main() {
@@ -48,15 +49,6 @@ int main() {
     gpio_set_function(SCL_PIN, GPIO_FUNC_I2C);
     gpio_pull_up(SDA_PIN);                    // schwache interne Pull-ups;
     gpio_pull_up(SCL_PIN);                    // die meisten Module haben eigene
-
-    stdio_init_all();
-    sleep_ms(3000);  // Zeit, um den seriellen Monitor zu oeffnen
-
-    i2c_init(I2C_PORT, 400 * 1000);
-    gpio_set_function(SDA_PIN, GPIO_FUNC_I2C);
-    gpio_set_function(SCL_PIN, GPIO_FUNC_I2C);
-    gpio_pull_up(SDA_PIN);
-    gpio_pull_up(SCL_PIN);
 
     VL53L1X sensor(I2C_PORT);
 
@@ -85,11 +77,11 @@ int main() {
     while (true) {
         
         // PIO Blinking example
-        // PIO pio = pio0;
-        // uint offset = pio_add_program(pio, &blink_program);
+        PIO pio = pio0;
+        uint offset = pio_add_program(pio, &blink_program);
         // printf("Loaded program at %d\n", offset);
         // #ifdef PICO_DEFAULT_LED_PIN
-        // blink_pin_forever(pio, 0, offset, PICO_DEFAULT_LED_PIN, 3);
+        blink_pin_forever(pio, 0, offset, PICO_DEFAULT_LED_PIN, 3);
         // #else
         // blink_pin_forever(pio, 0, offset, 6, 10);
         // #endif
